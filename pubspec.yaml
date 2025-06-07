@@ -13,6 +13,7 @@ dependencies:
 
   # ... other dependencies
   intl: ^0.19.0 # For date formatting
+  fl_chart: ^0.68.0 # For pie chart visualizations
   shared_preferences: ^2.2.0
   cupertino_icons: ^1.0.2
   path_provider: ^2.0.14 # For finding application directory for database on non-web platforms
