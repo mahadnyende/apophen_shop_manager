@@ -1,8 +1,7 @@
-// lib/screens/customer_screen.dart
 import 'package:flutter/material.dart';
-import 'package:apophen_shop_manager/services/customer_service.dart';
 import 'package:apophen_shop_manager/data/models/crm/customer_model.dart';
-import 'package:intl/intl.dart'; // Required for date formatting, add to pubspec.yaml if not already there
+import 'package:apophen_shop_manager/services/customer_service.dart';
+import 'package:intl/intl.dart';
 
 class CustomerScreen extends StatefulWidget {
   const CustomerScreen({super.key});
@@ -13,52 +12,47 @@ class CustomerScreen extends StatefulWidget {
 
 class _CustomerScreenState extends State<CustomerScreen> {
   final CustomerService _customerService = CustomerService();
-  final TextEditingController _firstNameController = TextEditingController();
-  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
+    _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
-    _customerService.dispose(); // Dispose the stream controller
+    _customerService.dispose();
     super.dispose();
   }
 
   void _clearControllers() {
-    _firstNameController.clear();
-    _lastNameController.clear();
+    _nameController.clear();
     _emailController.clear();
     _phoneController.clear();
     _addressController.clear();
   }
 
   void _addCustomer() async {
-    if (_firstNameController.text.isEmpty || _lastNameController.text.isEmpty) {
+    if (_nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('First Name and Last Name are required!')),
+        const SnackBar(content: Text('Customer Name is required!')),
       );
       return;
     }
 
     try {
       final customer = Customer(
-        firstName: _firstNameController.text,
-        lastName: _lastNameController.text,
-        email: _emailController.text,
-        phoneNumber: _phoneController.text,
-        address:
-            _addressController.text.isEmpty ? null : _addressController.text,
+        name: _nameController.text,
+        email: _emailController.text.isNotEmpty ? _emailController.text : null,
+        phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
+        address: _addressController.text.isNotEmpty ? _addressController.text : null,
       );
       await _customerService.addCustomer(customer);
       _clearControllers();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${customer.fullName} added successfully!')),
+        const SnackBar(content: Text('Customer added successfully!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -68,10 +62,9 @@ class _CustomerScreenState extends State<CustomerScreen> {
   }
 
   void _updateCustomer(Customer customer) async {
-    if (_firstNameController.text.isEmpty || _lastNameController.text.isEmpty) {
+    if (_nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('First Name and Last Name are required for update!')),
+        const SnackBar(content: Text('Customer Name is required for update!')),
       );
       return;
     }
@@ -79,20 +72,17 @@ class _CustomerScreenState extends State<CustomerScreen> {
     try {
       final updatedCustomer = Customer(
         id: customer.id, // Keep the existing ID
-        firstName: _firstNameController.text,
-        lastName: _lastNameController.text,
-        email: _emailController.text,
-        phoneNumber: _phoneController.text,
-        address:
-            _addressController.text.isEmpty ? null : _addressController.text,
+        name: _nameController.text,
+        email: _emailController.text.isNotEmpty ? _emailController.text : null,
+        phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
+        address: _addressController.text.isNotEmpty ? _addressController.text : null,
         createdAt: customer.createdAt, // Preserve original creation date
         lastModified: DateTime.now(), // Update last modified date
       );
       await _customerService.updateCustomer(updatedCustomer);
       _clearControllers();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('${updatedCustomer.fullName} updated successfully!')),
+        const SnackBar(content: Text('Customer updated successfully!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -101,24 +91,28 @@ class _CustomerScreenState extends State<CustomerScreen> {
     }
   }
 
-  void _showAddCustomerDialog(BuildContext context) {
-    _clearControllers(); // Clear controllers before showing add dialog
+  void _showCustomerDialog(BuildContext context, {Customer? customer}) {
+    _clearControllers(); // Clear controllers before showing dialog
+    if (customer != null) {
+      // Populate if editing an existing customer
+      _nameController.text = customer.name;
+      _emailController.text = customer.email ?? '';
+      _phoneController.text = customer.phone ?? '';
+      _addressController.text = customer.address ?? '';
+    }
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Add New Customer'),
+          title: Text(customer == null ? 'Add New Customer' : 'Edit Customer: ${customer.name}'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
-                  controller: _firstNameController,
-                  decoration: const InputDecoration(labelText: 'First Name *'),
-                ),
-                TextField(
-                  controller: _lastNameController,
-                  decoration: const InputDecoration(labelText: 'Last Name *'),
+                  controller: _nameController,
+                  decoration: const InputDecoration(labelText: 'Customer Name*'),
                 ),
                 TextField(
                   controller: _emailController,
@@ -127,13 +121,12 @@ class _CustomerScreenState extends State<CustomerScreen> {
                 ),
                 TextField(
                   controller: _phoneController,
-                  decoration: const InputDecoration(labelText: 'Phone Number'),
+                  decoration: const InputDecoration(labelText: 'Phone'),
                   keyboardType: TextInputType.phone,
                 ),
                 TextField(
                   controller: _addressController,
                   decoration: const InputDecoration(labelText: 'Address'),
-                  maxLines: 3,
                 ),
               ],
             ),
@@ -141,80 +134,21 @@ class _CustomerScreenState extends State<CustomerScreen> {
           actions: [
             TextButton(
               onPressed: () {
+                _clearControllers();
                 Navigator.of(context).pop();
               },
               child: const Text('Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
-                _addCustomer();
-                Navigator.of(context).pop(); // Close dialog after adding
-              },
-              child: const Text('Add Customer'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showEditCustomerDialog(BuildContext context, Customer customer) {
-    // Populate controllers with existing customer data
-    _firstNameController.text = customer.firstName;
-    _lastNameController.text = customer.lastName;
-    _emailController.text = customer.email;
-    _phoneController.text = customer.phoneNumber;
-    _addressController.text = customer.address ?? '';
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Edit Customer: ${customer.fullName}'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: _firstNameController,
-                  decoration: const InputDecoration(labelText: 'First Name *'),
-                ),
-                TextField(
-                  controller: _lastNameController,
-                  decoration: const InputDecoration(labelText: 'Last Name *'),
-                ),
-                TextField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                TextField(
-                  controller: _phoneController,
-                  decoration: const InputDecoration(labelText: 'Phone Number'),
-                  keyboardType: TextInputType.phone,
-                ),
-                TextField(
-                  controller: _addressController,
-                  decoration: const InputDecoration(labelText: 'Address'),
-                  maxLines: 3,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                _clearControllers(); // Clear controllers on cancel
+                if (customer == null) {
+                  _addCustomer();
+                } else {
+                  _updateCustomer(customer);
+                }
                 Navigator.of(context).pop();
               },
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                _updateCustomer(customer); // Pass the original customer for ID
-                Navigator.of(context).pop(); // Close dialog after updating
-              },
-              child: const Text('Save Changes'),
+              child: Text(customer == null ? 'Add Customer' : 'Save Changes'),
             ),
           ],
         );
@@ -226,24 +160,20 @@ class _CustomerScreenState extends State<CustomerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Customer Management',
-            style: TextStyle(color: Colors.white)),
+        title: const Text('Customer Management', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF6A1B9A),
         actions: [
           IconButton(
             icon: const Icon(Icons.person_add, color: Colors.white),
             tooltip: 'Add New Customer',
-            onPressed: () => _showAddCustomerDialog(context),
+            onPressed: () => _showCustomerDialog(context),
           ),
         ],
       ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFFFFF3E0),
-              Color(0xFFFFECB3)
-            ], // Light orange gradient for customers
+            colors: [Color(0xFFFFEBEE), Color(0xFFFFCDD2)], // Light pink gradient
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -262,7 +192,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.group, size: 80, color: Colors.grey),
+                    Icon(Icons.people_alt, size: 80, color: Colors.grey),
                     SizedBox(height: 20),
                     Text(
                       'No customers found. Add your first customer!',
@@ -289,48 +219,41 @@ class _CustomerScreenState extends State<CustomerScreen> {
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(16.0),
                     leading: CircleAvatar(
-                      backgroundColor:
-                          Theme.of(context).primaryColor.withOpacity(0.1),
-                      child: const Icon(Icons.person, color: Colors.orange),
+                      backgroundColor: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                      child: const Icon(Icons.person, color: Colors.pink),
                     ),
                     title: Text(
-                      customer.fullName,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 18),
+                      customer.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (customer.email.isNotEmpty)
+                        if (customer.email != null && customer.email!.isNotEmpty)
                           Text('Email: ${customer.email}'),
-                        if (customer.phoneNumber.isNotEmpty)
-                          Text('Phone: ${customer.phoneNumber}'),
-                        if (customer.address != null &&
-                            customer.address!.isNotEmpty)
+                        if (customer.phone != null && customer.phone!.isNotEmpty)
+                          Text('Phone: ${customer.phone}'),
+                        if (customer.address != null && customer.address!.isNotEmpty)
                           Text('Address: ${customer.address}'),
-                        Text(
-                            'Joined: ${DateFormat('yyyy-MM-dd').format(customer.createdAt)}'),
+                        Text('Joined: ${DateFormat('MMM d, yyyy').format(customer.createdAt.toLocal())}'),
+                        Text('Last Update: ${DateFormat('MMM d, yyyy').format(customer.lastModified.toLocal())}'),
                       ],
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon:
-                              const Icon(Icons.edit, color: Colors.blueAccent),
+                          icon: const Icon(Icons.edit, color: Colors.blueAccent),
                           onPressed: () {
-                            _showEditCustomerDialog(context, customer);
+                            _showCustomerDialog(context, customer: customer);
                           },
                         ),
                         IconButton(
-                          icon:
-                              const Icon(Icons.delete, color: Colors.redAccent),
+                          icon: const Icon(Icons.delete, color: Colors.redAccent),
                           onPressed: () async {
                             await _customerService.deleteCustomer(customer.id!);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content:
-                                      Text('${customer.fullName} deleted!')),
+                              SnackBar(content: Text('${customer.name} deleted!')),
                             );
                           },
                         ),

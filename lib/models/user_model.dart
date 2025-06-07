@@ -1,30 +1,53 @@
-enum UserRole { admin, manager, employee, unknown }
+// lib/models/user_model.dart
+enum UserRole {
+  admin,
+  manager,
+  employee,
+  unknown,
+}
 
 class User {
-  final String id;
+  String? id; // Sembast ID for the user record
   final String username;
+  String
+      password; // NEW: Added password field (for demo, would be hashed in production)
   final UserRole role;
+  final DateTime createdAt;
+  DateTime lastModified;
 
   User({
-    required this.id,
+    this.id,
     required this.username,
+    required this.password, // NEW
     this.role = UserRole.employee,
-  });
+    DateTime? createdAt,
+    DateTime? lastModified,
+  })  : createdAt = createdAt ?? DateTime.now(),
+        lastModified = lastModified ?? DateTime.now();
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'username': username,
-    'role': role.toString().split('.').last,
-  };
+  // Convert User object to a JSON-like map for Sembast
+  Map<String, dynamic> toMap() {
+    return {
+      'username': username,
+      'password': password, // NEW
+      'role': role.toString().split('.').last, // Convert enum to string
+      'createdAt': createdAt.toIso8601String(),
+      'lastModified': lastModified.toIso8601String(),
+    };
+  }
 
-  factory User.fromJson(Map<String, dynamic> json) {
+  // Create User object from a JSON-like map from Sembast
+  factory User.fromMap(Map<String, dynamic> map, {String? id}) {
     return User(
-      id: json['id'],
-      username: json['username'],
+      id: id,
+      username: map['username'] as String,
+      password: map['password'] as String, // NEW
       role: UserRole.values.firstWhere(
-        (e) => e.toString().split('.').last == json['role'],
+        (e) => e.toString().split('.').last == map['role'],
         orElse: () => UserRole.unknown,
       ),
+      createdAt: DateTime.parse(map['createdAt'] as String),
+      lastModified: DateTime.parse(map['lastModified'] as String),
     );
   }
 }

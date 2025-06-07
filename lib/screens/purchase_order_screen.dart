@@ -82,7 +82,7 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
           productSku: product.productSku,
           productName: product.name,
           orderedQuantity: 1,
-          costPrice: product.costPrice, // Use product's cost price
+          costPrice: product.price, // Use product's price as cost price
         ));
       });
     }

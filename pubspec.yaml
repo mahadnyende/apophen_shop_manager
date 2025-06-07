@@ -10,17 +10,17 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
-  # ... other dependencies
-  intl: ^0.19.0 # For date formatting
-  fl_chart: ^0.68.0 # For pie chart visualizations
-  shared_preferences: ^2.2.0
+  
+  shared_preferences: ^2.2.0 
   cupertino_icons: ^1.0.2
   path_provider: ^2.0.14 # For finding application directory for database on non-web platforms
+  
   # Sembast Database for local-first data storage (cross-platform, including web)
   sembast: ^3.6.0 # Core Sembast package
   sembast_web: ^2.1.0 # Sembast adapter for web
   path: ^1.8.3 # Helps in constructing database file paths
+  intl: ^0.18.1 # For date formatting
+  fl_chart: ^0.68.0 # For charting (Pie Chart, Line Chart, Bar Chart)
 
 dev_dependencies:
   flutter_test:
@@ -35,5 +35,3 @@ flutter:
         - asset: assets/fonts/Inter-Regular.ttf
         - asset: assets/fonts/Inter-Bold.ttf
           weight: 700
-  assets:
-    - assets/fonts/

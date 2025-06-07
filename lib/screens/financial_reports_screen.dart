@@ -26,7 +26,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
       0.0; // New: To calculate COGS for financial report
   double _grossProfit = 0.0; // New: Gross Profit
   double _netProfit = 0.0; // Updated: Now (Gross Profit - Expenses)
-  double _totalExpenses = 0.0; // FIX: Declare _totalExpenses here
+  double _totalExpenses = 0.0;
 
   DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
   DateTime _endDate = DateTime.now();
@@ -37,6 +37,8 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
       {}; // New field to store categorized expenses
   Map<DateTime, double> _dailySales =
       {}; // New field for daily sales data for charting
+  Map<DateTime, double> _dailyExpenses =
+      {}; // New field for daily expenses data for charting
   Map<String, double> _productProfits =
       {}; // New field to store aggregated product profits
 
@@ -93,7 +95,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
     double salesSum =
         filteredSales.fold(0.0, (sum, sale) => sum + sale.finalTotalAmount);
 
-    // Calculate Cost of Goods Sold from sales items
+    // Calculate Cost of Goods Sold from sales items (now directly from SaleItem's costPrice)
     double cogsSum = 0.0;
     for (var sale in filteredSales) {
       for (var item in sale.items) {
@@ -127,7 +129,20 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
       );
     }
 
-    // Calculate product profits
+    // Calculate daily expenses for charting
+    final Map<DateTime, double> tempDailyExpenses = {};
+    for (var expense in filteredExpenses) {
+      // Normalize date to INSEE-MM-DD
+      final normalizedDate = DateTime(expense.expenseDate.year,
+          expense.expenseDate.month, expense.expenseDate.day);
+      tempDailyExpenses.update(
+        normalizedDate,
+        (value) => value + expense.amount,
+        ifAbsent: () => expense.amount,
+      );
+    }
+
+    // Calculate product profits (now directly from SaleItem's grossProfit)
     final Map<String, double> tempProductProfits = {};
     for (var sale in filteredSales) {
       for (var item in sale.items) {
@@ -145,11 +160,11 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
       _grossProfit = salesSum - cogsSum; // Calculate Gross Profit
       _netProfit = _grossProfit -
           expensesSum; // Net Profit is now Gross Profit - Expenses
-      _totalExpenses =
-          expensesSum; // FIX: Assign calculated expensesSum to _totalExpenses
+      _totalExpenses = expensesSum;
       _expensesByCategory =
           tempExpensesByCategory; // Update categorized expenses
       _dailySales = tempDailySales; // Update daily sales
+      _dailyExpenses = tempDailyExpenses; // Update daily expenses
       _productProfits = tempProductProfits; // Update product profits
     });
   }
@@ -236,7 +251,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
             item.productName,
             item.quantity.toString(),
             item.basePrice.toStringAsFixed(2),
-            item.costPrice.toStringAsFixed(2),
+            item.costPrice.toStringAsFixed(2), // NEW: Export costPrice
             item.itemDiscount.toStringAsFixed(2),
             item.grossProfit.toStringAsFixed(2),
           ]);
@@ -296,6 +311,35 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
   }
   // --- End Export to CSV functionality ---
 
+  // Helper method to build the product profitability list
+  List<Widget> _buildProductProfitabilityList() {
+    final List<MapEntry<String, double>> sortedEntries =
+        _productProfits.entries.toList();
+    sortedEntries.sort((a, b) => b.value.compareTo(a.value)); // Sort in place
+
+    return sortedEntries
+        .map((entry) => Card(
+              margin: const EdgeInsets.only(bottom: 8.0),
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.0)),
+              child: ListTile(
+                title: Text(entry.key,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                trailing: Text(
+                  '\$${entry.value.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: entry.value >= 0
+                        ? Colors.green
+                        : Colors.red, // Green for profit, red for loss
+                  ),
+                ),
+              ),
+            ))
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Filter sales and expenses for display based on the current date range
@@ -316,9 +360,9 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
     // Apply additional filters based on toggle switches
     if (_showPositiveProfitSalesOnly) {
       displaySales = displaySales.where((sale) {
-        final saleProfit = sale.finalTotalAmount -
-            sale.items.fold(
-                0.0, (sum, item) => sum + (item.costPrice * item.quantity));
+        // Now calculate profit using sale.items.grossProfit
+        final saleProfit =
+            sale.items.fold(0.0, (sum, item) => sum + item.grossProfit);
         return saleProfit > 0;
       }).toList();
     }
@@ -401,6 +445,60 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
     // Add a small buffer to maxY for better chart appearance
     maxY = maxY * 1.1;
     if (maxY == 0.0) maxY = 10.0; // Ensure a min Y if no sales
+
+    // Prepare data for Stacked Bar Chart (Sales vs Expenses)
+    final List<BarChartGroupData> barGroups = [];
+    double maxBarY = 0.0;
+    for (int i = 0; i < datesInRange.length; i++) {
+      final date = datesInRange[i];
+      final salesAmount = _dailySales[date] ?? 0.0;
+      final expensesAmount = _dailyExpenses[date] ?? 0.0;
+
+      // Calculate max Y for the bar chart
+      if ((salesAmount + expensesAmount) > maxBarY) {
+        maxBarY = salesAmount + expensesAmount;
+      }
+
+      barGroups.add(
+        BarChartGroupData(
+          x: i,
+          barRods: [
+            BarChartRodData(
+              fromY: 0,
+              toY: salesAmount,
+              color: Colors.green.withOpacity(0.7),
+              width: 10,
+              borderRadius: BorderRadius
+                  .zero, // Remove rounded corners for stacked appearance
+              backDrawRodData: BackgroundBarChartRodData(
+                show: true,
+                toY: maxBarY, // Extend to max height for consistent background
+                color: Colors.grey.withOpacity(0.2),
+              ),
+            ),
+            BarChartRodData(
+              fromY: salesAmount, // Stack on top of sales
+              toY: salesAmount + expensesAmount,
+              color: Colors.red.withOpacity(0.7),
+              width: 10,
+              borderRadius: BorderRadius.zero,
+              backDrawRodData: BackgroundBarChartRodData(
+                show: true,
+                toY: maxBarY,
+                color:
+                    Colors.transparent, // No separate background for this part
+              ),
+            ),
+          ],
+          showingTooltipIndicators: [
+            0,
+            1
+          ], // Show tooltips for both parts of the stack
+        ),
+      );
+    }
+    maxBarY = maxBarY * 1.1; // Add buffer to max bar Y
+    if (maxBarY == 0.0) maxBarY = 10.0; // Ensure a min Y if no sales/expenses
 
     return Scaffold(
       appBar: AppBar(
@@ -655,6 +753,124 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
 
               const SizedBox(height: 20),
 
+              // Sales vs Expenses Bar Chart
+              Text(
+                'Daily Sales vs Expenses',
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple),
+              ),
+              const SizedBox(height: 10),
+              if (barGroups.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text(
+                      'No sales or expenses data to display for this period.',
+                      style: TextStyle(color: Colors.grey)),
+                )
+              else
+                Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.0)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: SizedBox(
+                      height: 250, // Height for the bar chart
+                      child: BarChart(
+                        BarChartData(
+                          barGroups: barGroups,
+                          gridData: FlGridData(
+                            show: true,
+                            drawVerticalLine: true,
+                            getDrawingHorizontalLine: (value) {
+                              return const FlLine(
+                                color: Color(0xff37434d),
+                                strokeWidth: 1,
+                              );
+                            },
+                            getDrawingVerticalLine: (value) {
+                              return const FlLine(
+                                color: Color(0xff37434d),
+                                strokeWidth: 1,
+                              );
+                            },
+                          ),
+                          titlesData: FlTitlesData(
+                            show: true,
+                            rightTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 30,
+                                getTitlesWidget: (value, meta) {
+                                  if (value.toInt() < datesInRange.length) {
+                                    final date = datesInRange[value.toInt()];
+                                    return SideTitleWidget(
+                                      axisSide: meta.axisSide,
+                                      space: 8.0,
+                                      child: Text(
+                                          DateFormat('MMM d').format(date),
+                                          style: const TextStyle(fontSize: 10)),
+                                    );
+                                  }
+                                  return const Text('');
+                                },
+                                interval: (datesInRange.length / 5)
+                                    .ceil()
+                                    .toDouble(), // Adjust interval dynamically
+                              ),
+                            ),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 40,
+                                getTitlesWidget: (value, meta) {
+                                  return Text('\$${value.toInt()}',
+                                      style: const TextStyle(fontSize: 10));
+                                },
+                              ),
+                            ),
+                          ),
+                          borderData: FlBorderData(
+                            show: true,
+                            border: Border.all(
+                                color: const Color(0xff37434d), width: 1),
+                          ),
+                          barTouchData: BarTouchData(
+                            touchTooltipData: BarTouchTooltipData(
+                              getTooltipItem:
+                                  (group, groupIndex, rod, rodIndex) {
+                                String text;
+                                if (rodIndex == 0) {
+                                  text =
+                                      'Sales: \$${rod.toY.toStringAsFixed(2)}';
+                                } else {
+                                  text =
+                                      'Expenses: \$${(rod.toY - group.barRods[0].toY).toStringAsFixed(2)}';
+                                }
+                                return BarTooltipItem(
+                                  text,
+                                  const TextStyle(color: Colors.white),
+                                );
+                              },
+                            ),
+                          ),
+                          minY: 0,
+                          maxY: maxBarY, // Dynamic Y-axis max for bar chart
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 20),
+
               // Expenses by Category Breakdown
               Text(
                 'Expenses by Category',
@@ -746,7 +962,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                     ),
               const SizedBox(height: 20),
 
-              // Product Profitability Breakdown (NEW SECTION)
+              // Product Profitability Breakdown
               Text(
                 'Product Profitability',
                 style: const TextStyle(
@@ -762,31 +978,8 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                           style: TextStyle(color: Colors.grey)),
                     )
                   : Column(
-                      children: _productProfits.entries
-                          .toList() // Ensure .toList() is called before sort
-                        ..sort((a, b) => b.value.compareTo(a.value))
-                            .map((entry) => Card(
-                                  margin: const EdgeInsets.only(bottom: 8.0),
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8.0)),
-                                  child: ListTile(
-                                    title: Text(entry.key,
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                    trailing: Text(
-                                      '\$${entry.value.toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: entry.value >= 0
-                                            ? Colors.green
-                                            : Colors
-                                                .red, // Green for profit, red for loss
-                                      ),
-                                    ),
-                                  ),
-                                ))
-                            .toList(), // Ensure .toList() is called after map
+                      // Use the helper method to get the list of widgets
+                      children: _buildProductProfitabilityList(),
                     ),
               const SizedBox(height: 20),
 
@@ -834,11 +1027,9 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                         final sale = displaySales[index];
                         final saleDateFormatted = DateFormat('yyyy-MM-dd HH:mm')
                             .format(sale.saleDate);
-                        final saleProfit = sale.finalTotalAmount -
-                            sale.items.fold(
-                                0.0,
-                                (sum, item) =>
-                                    sum + (item.costPrice * item.quantity));
+                        // Now calculate profit using sale.items.grossProfit
+                        final saleProfit = sale.items
+                            .fold(0.0, (sum, item) => sum + item.grossProfit);
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8.0),
                           elevation: 2,

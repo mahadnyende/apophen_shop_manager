@@ -1,10 +1,12 @@
+// lib/services/inventory_service.dart
 import 'package:sembast/sembast.dart';
 import 'package:apophen_shop_manager/data/local/database/app_database.dart';
 import 'package:apophen_shop_manager/data/models/inventory/product_model.dart';
 import 'dart:async'; // For StreamController
 
 class InventoryService {
-  final _productsStore = stringMapStoreFactory.store('products'); // Define a store for products
+  final _productsStore =
+      stringMapStoreFactory.store('products'); // Define a store for products
   final _productsStreamController = StreamController<List<Product>>.broadcast();
 
   InventoryService() {
@@ -16,7 +18,8 @@ class InventoryService {
     final db = await AppDatabase.instance;
     _productsStore.query().onSnapshots(db).listen((snapshots) {
       final products = snapshots.map((snapshot) {
-        return Product.fromMap(snapshot.value, id: snapshot.key); // Pass key as ID
+        return Product.fromMap(snapshot.value,
+            id: snapshot.key); // Pass key as ID
       }).toList();
       _productsStreamController.sink.add(products);
     }, onError: (error) {
@@ -30,7 +33,8 @@ class InventoryService {
     final db = await AppDatabase.instance;
     // Check if productSku already exists to ensure uniqueness manually
     final existingProduct = await _productsStore.findFirst(db,
-        finder: Finder(filter: Filter.equals('productSku', product.productSku)));
+        finder:
+            Finder(filter: Filter.equals('productSku', product.productSku)));
 
     if (existingProduct != null) {
       throw Exception('Product with SKU ${product.productSku} already exists.');
@@ -50,6 +54,17 @@ class InventoryService {
     final db = await AppDatabase.instance;
     final recordSnapshot = await _productsStore.findFirst(db,
         finder: Finder(filter: Filter.equals('productSku', sku)));
+    if (recordSnapshot != null) {
+      return Product.fromMap(recordSnapshot.value, id: recordSnapshot.key);
+    }
+    return null;
+  }
+
+  // Get a single product by its ID
+  Future<Product?> getProductById(String id) async {
+    // NEW: Method to get product by ID
+    final db = await AppDatabase.instance;
+    final recordSnapshot = await _productsStore.record(id).getSnapshot(db);
     if (recordSnapshot != null) {
       return Product.fromMap(recordSnapshot.value, id: recordSnapshot.key);
     }
@@ -79,9 +94,11 @@ class InventoryService {
 
   // Adjust product stock quantity (for sales/returns)
   // This method now accepts a 'Transaction' object to participate in an existing transaction.
-  Future<void> adjustStock(String productId, int quantityChange, Transaction txn) async {
+  Future<void> adjustStock(
+      String productId, int quantityChange, Transaction txn) async {
     final productRecord = _productsStore.record(productId);
-    final snapshot = await productRecord.getSnapshot(txn); // Use the provided transaction
+    final snapshot =
+        await productRecord.getSnapshot(txn); // Use the provided transaction
 
     if (snapshot == null) {
       throw Exception('Product not found for stock adjustment: $productId');
@@ -89,11 +106,14 @@ class InventoryService {
 
     final product = Product.fromMap(snapshot.value, id: snapshot.key);
     if (product.stockQuantity + quantityChange < 0) {
-      throw Exception('Not enough stock for ${product.name}. Available: ${product.stockQuantity}');
+      throw Exception(
+          'Not enough stock for ${product.name}. Available: ${product.stockQuantity}');
     }
     product.updateStock(quantityChange); // This also updates lastModified
-    await productRecord.put(txn, product.toMap()); // Use the provided transaction
-    print('Stock for ${product.name} adjusted by $quantityChange to ${product.stockQuantity}');
+    await productRecord.put(
+        txn, product.toMap()); // Use the provided transaction
+    print(
+        'Stock for ${product.name} adjusted by $quantityChange to ${product.stockQuantity}');
   }
 
   // Helper to fetch and emit products to the stream (newly added for explicit refresh)
@@ -105,7 +125,6 @@ class InventoryService {
     }).toList();
     _productsStreamController.sink.add(products);
   }
-
 
   // Don't forget to close the stream controller when the service is no longer needed
   void dispose() {

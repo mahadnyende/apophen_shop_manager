@@ -1,4 +1,3 @@
-// This file will manage the Sembast database instance.
 import 'package:sembast/sembast.dart';
 import 'package:sembast/sembast_io.dart'; // For mobile/desktop file system
 import 'package:sembast_web/sembast_web.dart'; // For web browser IndexedDB

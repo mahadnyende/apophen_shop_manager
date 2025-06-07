@@ -1,3 +1,4 @@
+// lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:apophen_shop_manager/services/auth_service.dart';
 import 'package:apophen_shop_manager/screens/dashboard_screen.dart';
@@ -80,9 +81,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 40),
                 Card(
-                  margin: EdgeInsets.zero,
+                  margin: EdgeInsets.zero, // Remove default card margin
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16.0),
+                    borderRadius:
+                        BorderRadius.circular(16.0), // Rounded corners
                   ),
                   elevation: 8,
                   child: Padding(
@@ -109,7 +111,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _passwordController,
                           decoration: InputDecoration(
                             labelText: 'Password',
-                            hintText: 'password',
+                            hintText:
+                                'password', // All test passwords are 'password'
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10.0),
                             ),
@@ -126,9 +129,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 child: Text(
                                   _errorMessage!,
                                   style: const TextStyle(
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold),
                                   textAlign: TextAlign.center,
                                 ),
                               )
@@ -142,18 +144,17 @@ class _LoginScreenState extends State<LoginScreen> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10.0),
                               ),
-                              backgroundColor: const Color(0xFF6A1B9A),
+                              backgroundColor:
+                                  const Color(0xFF6A1B9A), // Primary color
                               foregroundColor: Colors.white,
-                              shadowColor: const Color(
-                                0xFF4A148C,
-                              ).withOpacity(0.5),
+                              shadowColor:
+                                  const Color(0xFF4A148C).withOpacity(0.5),
                               elevation: 5,
                             ),
                             child: _isLoading
                                 ? const CircularProgressIndicator(
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
+                                        Colors.white),
                                   )
                                 : const Text(
                                     'Login',

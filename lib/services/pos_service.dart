@@ -1,4 +1,3 @@
-// lib/services/pos_service.dart
 import 'package:sembast/sembast.dart';
 import 'package:apophen_shop_manager/data/local/database/app_database.dart';
 import 'package:apophen_shop_manager/data/models/pos/sale_model.dart';

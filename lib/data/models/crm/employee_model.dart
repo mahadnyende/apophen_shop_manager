@@ -1,42 +1,43 @@
-class Customer {
-  String? id; // Sembast ID for the customer record
+// lib/data/models/crm/employee_model.dart
+class Employee {
+  String? id; // Sembast ID for the employee record
   final String name;
+  final String role; // e.g., 'Manager', 'Sales Associate', 'Admin'
   final String? email;
   final String? phone;
-  final String? address;
-  final DateTime createdAt;
+  final DateTime hireDate;
   DateTime lastModified;
 
-  Customer({
+  Employee({
     this.id,
     required this.name,
+    required this.role,
     this.email,
     this.phone,
-    this.address,
-    DateTime? createdAt,
+    DateTime? hireDate,
     DateTime? lastModified,
-  })  : createdAt = createdAt ?? DateTime.now(),
+  })  : hireDate = hireDate ?? DateTime.now(),
         lastModified = lastModified ?? DateTime.now();
 
   Map<String, dynamic> toMap() {
     return {
       'name': name,
+      'role': role,
       'email': email,
       'phone': phone,
-      'address': address,
-      'createdAt': createdAt.toIso8601String(),
+      'hireDate': hireDate.toIso8601String(),
       'lastModified': lastModified.toIso8601String(),
     };
   }
 
-  factory Customer.fromMap(Map<String, dynamic> map, {String? id}) {
-    return Customer(
+  factory Employee.fromMap(Map<String, dynamic> map, {String? id}) {
+    return Employee(
       id: id,
       name: map['name'] as String,
+      role: map['role'] as String,
       email: map['email'] as String?,
       phone: map['phone'] as String?,
-      address: map['address'] as String?,
-      createdAt: DateTime.parse(map['createdAt'] as String),
+      hireDate: DateTime.parse(map['hireDate'] as String),
       lastModified: DateTime.parse(map['lastModified'] as String),
     );
   }

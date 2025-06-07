@@ -10,16 +10,14 @@ class ExpenseService {
   final _expensesStreamController = StreamController<List<Expense>>.broadcast();
 
   ExpenseService() {
-    _initExpenseStream(); // Initialize the stream to listen to changes
+    _initExpenseStream();
   }
 
-  // Initialize the stream by listening to the Sembast store
   Future<void> _initExpenseStream() async {
     final db = await AppDatabase.instance;
     _expensesStore.query().onSnapshots(db).listen((snapshots) {
       final expenses = snapshots.map((snapshot) {
-        return Expense.fromMap(snapshot.value,
-            id: snapshot.key); // Pass key as ID
+        return Expense.fromMap(snapshot.value, id: snapshot.key);
       }).toList();
       _expensesStreamController.sink.add(expenses);
     }, onError: (error) {
@@ -28,30 +26,16 @@ class ExpenseService {
     });
   }
 
-  // Add a new expense to the database
   Future<void> addExpense(Expense expense) async {
     final db = await AppDatabase.instance;
     final key = await _expensesStore.add(db, expense.toMap());
     print('Expense added with key: $key');
-    _fetchAndEmitExpenses(); // Trigger refresh after adding
   }
 
-  // Get all expenses from the database (stream)
   Stream<List<Expense>> getExpenses() {
     return _expensesStreamController.stream;
   }
 
-  // Get a single expense by ID
-  Future<Expense?> getExpenseById(String id) async {
-    final db = await AppDatabase.instance;
-    final recordSnapshot = await _expensesStore.record(id).getSnapshot(db);
-    if (recordSnapshot != null) {
-      return Expense.fromMap(recordSnapshot.value, id: recordSnapshot.key);
-    }
-    return null;
-  }
-
-  // Update an existing expense
   Future<void> updateExpense(Expense expense) async {
     if (expense.id == null) {
       throw Exception('Expense ID is required for update.');
@@ -59,10 +43,8 @@ class ExpenseService {
     final db = await AppDatabase.instance;
     await _expensesStore.record(expense.id!).put(db, expense.toMap());
     print('Expense updated: ${expense.title}');
-    _fetchAndEmitExpenses(); // Trigger refresh after updating
   }
 
-  // Delete an expense by ID
   Future<void> deleteExpense(String id) async {
     final db = await AppDatabase.instance;
     final count = await _expensesStore.record(id).delete(db);
@@ -71,20 +53,8 @@ class ExpenseService {
     } else {
       print('Expense with ID $id not found for deletion.');
     }
-    _fetchAndEmitExpenses(); // Trigger refresh after deleting
   }
 
-  // Helper to fetch and emit expenses to the stream
-  Future<void> _fetchAndEmitExpenses() async {
-    final db = await AppDatabase.instance;
-    final snapshots = await _expensesStore.find(db);
-    final expenses = snapshots.map((snapshot) {
-      return Expense.fromMap(snapshot.value, id: snapshot.key);
-    }).toList();
-    _expensesStreamController.sink.add(expenses);
-  }
-
-  // Don't forget to close the stream controller when the service is no longer needed
   void dispose() {
     _expensesStreamController.close();
   }

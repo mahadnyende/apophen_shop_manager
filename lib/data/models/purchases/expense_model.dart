@@ -1,13 +1,11 @@
 // lib/data/models/purchases/expense_model.dart
 class Expense {
   String? id; // Sembast ID for the expense record
-  String title; // A brief description of the expense
-  String? description; // More detailed description
-  double amount;
-  DateTime expenseDate;
-  String category; // E.g., 'Rent', 'Utilities', 'Salaries', 'Office Supplies'
-  DateTime createdAt;
-  DateTime lastModified;
+  final String title;
+  final String? description;
+  final double amount;
+  final DateTime expenseDate;
+  final String category; // e.g., 'Rent', 'Utilities', 'Supplies', 'Salaries'
 
   Expense({
     this.id,
@@ -15,11 +13,8 @@ class Expense {
     this.description,
     required this.amount,
     required this.expenseDate,
-    this.category = 'Other',
-    DateTime? createdAt,
-    DateTime? lastModified,
-  })  : createdAt = createdAt ?? DateTime.now(),
-        lastModified = lastModified ?? DateTime.now();
+    this.category = 'General',
+  });
 
   // Convert an Expense object to a Map for Sembast storage
   Map<String, dynamic> toMap() {
@@ -30,8 +25,6 @@ class Expense {
       'expenseDate':
           expenseDate.toIso8601String(), // Store DateTime as ISO string
       'category': category,
-      'createdAt': createdAt.toIso8601String(),
-      'lastModified': lastModified.toIso8601String(),
     };
   }
 
@@ -43,9 +36,8 @@ class Expense {
       description: map['description'] as String?,
       amount: map['amount'] as double,
       expenseDate: DateTime.parse(map['expenseDate'] as String),
-      category: map['category'] as String? ?? 'Other',
-      createdAt: DateTime.parse(map['createdAt'] as String),
-      lastModified: DateTime.parse(map['lastModified'] as String),
+      category: map['category'] as String? ??
+          'General', // Handle old data without category
     );
   }
 }

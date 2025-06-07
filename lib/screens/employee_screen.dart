@@ -1,8 +1,7 @@
-// lib/screens/employee_screen.dart
 import 'package:flutter/material.dart';
+import 'package:apophen_shop_manager/data/models/crm/employee_model.dart';
 import 'package:apophen_shop_manager/services/employee_service.dart';
-import 'package:apophen_shop_manager/data/models/employees/employee_model.dart';
-import 'package:intl/intl.dart'; // Required for date formatting
+import 'package:intl/intl.dart';
 
 class EmployeeScreen extends StatefulWidget {
   const EmployeeScreen({super.key});
@@ -13,101 +12,65 @@ class EmployeeScreen extends StatefulWidget {
 
 class _EmployeeScreenState extends State<EmployeeScreen> {
   final EmployeeService _employeeService = EmployeeService();
-  final TextEditingController _firstNameController = TextEditingController();
-  final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _positionController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _roleController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _salaryController = TextEditingController();
-  DateTime? _selectedHireDate;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedHireDate = DateTime.now(); // Default to today's date
-  }
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _hireDateController = TextEditingController();
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _positionController.dispose();
-    _phoneController.dispose();
+    _nameController.dispose();
+    _roleController.dispose();
     _emailController.dispose();
-    _addressController.dispose();
-    _salaryController.dispose();
-    _employeeService.dispose(); // Dispose the stream controller
+    _phoneController.dispose();
+    _hireDateController.dispose();
+    _employeeService.dispose();
     super.dispose();
   }
 
   void _clearControllers() {
-    _firstNameController.clear();
-    _lastNameController.clear();
-    _positionController.clear();
-    _phoneController.clear();
+    _nameController.clear();
+    _roleController.clear();
     _emailController.clear();
-    _addressController.clear();
-    _salaryController.clear();
-    setState(() {
-      _selectedHireDate = DateTime.now();
-    });
+    _phoneController.clear();
+    _hireDateController.clear();
   }
 
   Future<void> _selectHireDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _selectedHireDate ?? DateTime.now(),
-      firstDate: DateTime(1900), // Far back enough for hire dates
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
       lastDate: DateTime(2101),
     );
-    if (picked != null && picked != _selectedHireDate) {
+    if (picked != null) {
       setState(() {
-        _selectedHireDate = picked;
+        _hireDateController.text = DateFormat('yyyy-MM-dd').format(picked);
       });
     }
   }
 
   void _addEmployee() async {
-    if (_firstNameController.text.isEmpty ||
-        _lastNameController.text.isEmpty ||
-        _positionController.text.isEmpty ||
-        _selectedHireDate == null) {
+    if (_nameController.text.isEmpty || _roleController.text.isEmpty || _hireDateController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'First Name, Last Name, Position, and Hire Date are required!')),
+        const SnackBar(content: Text('Name, Role, and Hire Date are required!')),
       );
       return;
-    }
-    double? salary;
-    if (_salaryController.text.isNotEmpty) {
-      salary = double.tryParse(_salaryController.text);
-      if (salary == null || salary < 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Please enter a valid positive salary amount!')),
-        );
-        return;
-      }
     }
 
     try {
       final employee = Employee(
-        firstName: _firstNameController.text,
-        lastName: _lastNameController.text,
-        position: _positionController.text,
-        phoneNumber: _phoneController.text,
-        email: _emailController.text,
-        hireDate: _selectedHireDate!,
-        address:
-            _addressController.text.isEmpty ? null : _addressController.text,
-        salary: salary,
+        name: _nameController.text,
+        role: _roleController.text,
+        email: _emailController.text.isNotEmpty ? _emailController.text : null,
+        phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
+        hireDate: DateTime.parse(_hireDateController.text),
       );
       await _employeeService.addEmployee(employee);
       _clearControllers();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${employee.fullName} added successfully!')),
+        const SnackBar(content: Text('Employee added successfully!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -117,49 +80,27 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
   }
 
   void _updateEmployee(Employee employee) async {
-    if (_firstNameController.text.isEmpty ||
-        _lastNameController.text.isEmpty ||
-        _positionController.text.isEmpty ||
-        _selectedHireDate == null) {
+    if (_nameController.text.isEmpty || _roleController.text.isEmpty || _hireDateController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'First Name, Last Name, Position, and Hire Date are required for update!')),
+        const SnackBar(content: Text('Name, Role, and Hire Date are required for update!')),
       );
       return;
-    }
-    double? salary;
-    if (_salaryController.text.isNotEmpty) {
-      salary = double.tryParse(_salaryController.text);
-      if (salary == null || salary < 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Please enter a valid positive salary amount!')),
-        );
-        return;
-      }
     }
 
     try {
       final updatedEmployee = Employee(
         id: employee.id, // Keep the existing ID
-        firstName: _firstNameController.text,
-        lastName: _lastNameController.text,
-        position: _positionController.text,
-        phoneNumber: _phoneController.text,
-        email: _emailController.text,
-        hireDate: _selectedHireDate!,
-        address:
-            _addressController.text.isEmpty ? null : _addressController.text,
-        salary: salary,
-        createdAt: employee.createdAt, // Preserve original creation date
+        name: _nameController.text,
+        role: _roleController.text,
+        email: _emailController.text.isNotEmpty ? _emailController.text : null,
+        phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
+        hireDate: DateTime.parse(_hireDateController.text),
         lastModified: DateTime.now(), // Update last modified date
       );
       await _employeeService.updateEmployee(updatedEmployee);
       _clearControllers();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('${updatedEmployee.fullName} updated successfully!')),
+        const SnackBar(content: Text('Employee updated successfully!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -168,115 +109,81 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     }
   }
 
-  void _showAddEditEmployeeDialog({Employee? employee}) {
-    _clearControllers(); // Clear for new, or will be populated below for edit
-    bool isEditing = employee != null;
-
-    if (isEditing) {
-      _firstNameController.text = employee.firstName;
-      _lastNameController.text = employee.lastName;
-      _positionController.text = employee.position;
-      _phoneController.text = employee.phoneNumber;
-      _emailController.text = employee.email;
-      _addressController.text = employee.address ?? '';
-      _salaryController.text = employee.salary?.toString() ?? '';
-      _selectedHireDate = employee.hireDate;
+  void _showEmployeeDialog(BuildContext context, {Employee? employee}) {
+    _clearControllers(); // Clear controllers before showing dialog
+    if (employee != null) {
+      // Populate if editing an existing employee
+      _nameController.text = employee.name;
+      _roleController.text = employee.role;
+      _emailController.text = employee.email ?? '';
+      _phoneController.text = employee.phone ?? '';
+      _hireDateController.text = DateFormat('yyyy-MM-dd').format(employee.hireDate);
+    } else {
+      _hireDateController.text = DateFormat('yyyy-MM-dd').format(DateTime.now()); // Default to today for new employee
     }
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setStateInDialog) {
-            return AlertDialog(
-              title: Text(isEditing ? 'Edit Employee' : 'Add New Employee'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: _firstNameController,
-                      decoration:
-                          const InputDecoration(labelText: 'First Name *'),
-                    ),
-                    TextField(
-                      controller: _lastNameController,
-                      decoration:
-                          const InputDecoration(labelText: 'Last Name *'),
-                    ),
-                    TextField(
-                      controller: _positionController,
-                      decoration:
-                          const InputDecoration(labelText: 'Position *'),
-                    ),
-                    TextField(
-                      controller: _phoneController,
-                      decoration:
-                          const InputDecoration(labelText: 'Phone Number'),
-                      keyboardType: TextInputType.phone,
-                    ),
-                    TextField(
-                      controller: _emailController,
-                      decoration: const InputDecoration(labelText: 'Email'),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    TextField(
-                      controller: _addressController,
-                      decoration: const InputDecoration(labelText: 'Address'),
-                      maxLines: 3,
-                    ),
-                    TextField(
-                      controller: _salaryController,
-                      decoration:
-                          const InputDecoration(labelText: 'Salary (Optional)'),
-                      keyboardType: TextInputType.number,
-                    ),
-                    ListTile(
-                      title: Text(
-                          'Hire Date: ${_selectedHireDate == null ? 'Select Date *' : DateFormat('yyyy-MM-dd').format(_selectedHireDate!)}'),
-                      trailing: const Icon(Icons.calendar_today),
-                      onTap: () async {
-                        final pickedDate = await showDatePicker(
-                          context: context,
-                          initialDate: _selectedHireDate ?? DateTime.now(),
-                          firstDate: DateTime(1900),
-                          lastDate: DateTime(2101),
-                        );
-                        if (pickedDate != null &&
-                            pickedDate != _selectedHireDate) {
-                          setStateInDialog(() {
-                            // Update dialog's state
-                            _selectedHireDate = pickedDate;
-                          });
-                        }
-                      },
-                    ),
-                  ],
+        return AlertDialog(
+          title: Text(employee == null ? 'Add New Employee' : 'Edit Employee: ${employee.name}'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(labelText: 'Employee Name*'),
                 ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    _clearControllers(); // Clear on cancel
-                  },
-                  child: const Text('Cancel'),
+                TextField(
+                  controller: _roleController,
+                  decoration: const InputDecoration(labelText: 'Role* (e.g., Manager, Sales Associate)'),
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (isEditing) {
-                      _updateEmployee(employee!);
-                    } else {
-                      _addEmployee();
-                    }
-                    Navigator.of(context)
-                        .pop(); // Close dialog after action attempt
-                  },
-                  child: Text(isEditing ? 'Save Changes' : 'Add Employee'),
+                TextField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(labelText: 'Email'),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                TextField(
+                  controller: _phoneController,
+                  decoration: const InputDecoration(labelText: 'Phone'),
+                  keyboardType: TextInputType.phone,
+                ),
+                GestureDetector(
+                  onTap: () => _selectHireDate(context),
+                  child: AbsorbPointer(
+                    child: TextField(
+                      controller: _hireDateController,
+                      decoration: const InputDecoration(
+                        labelText: 'Hire Date*',
+                        suffixIcon: Icon(Icons.calendar_today),
+                      ),
+                    ),
+                  ),
                 ),
               ],
-            );
-          },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _clearControllers();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (employee == null) {
+                  _addEmployee();
+                } else {
+                  _updateEmployee(employee);
+                }
+                Navigator.of(context).pop();
+              },
+              child: Text(employee == null ? 'Add Employee' : 'Save Changes'),
+            ),
+          ],
         );
       },
     );
@@ -286,24 +193,20 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Employee Management',
-            style: TextStyle(color: Colors.white)),
+        title: const Text('Employee Management', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF6A1B9A),
         actions: [
           IconButton(
-            icon: const Icon(Icons.person_add, color: Colors.white),
+            icon: const Icon(Icons.person_add_alt_1, color: Colors.white),
             tooltip: 'Add New Employee',
-            onPressed: () => _showAddEditEmployeeDialog(),
+            onPressed: () => _showEmployeeDialog(context),
           ),
         ],
       ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFFEDE7F6),
-              Color(0xFFD1C4E9)
-            ], // Light purple gradient for employees
+            colors: [Color(0xFFE0F2F7), Color(0xFFB2EBF2)], // Light teal gradient
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -322,7 +225,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.people_alt, size: 80, color: Colors.grey),
+                    Icon(Icons.people, size: 80, color: Colors.grey),
                     SizedBox(height: 20),
                     Text(
                       'No employees found. Add your first employee!',
@@ -335,15 +238,6 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
             }
 
             final employees = snapshot.data!;
-            // Sort by last name then first name
-            employees.sort((a, b) {
-              int lastNameComparison = a.lastName.compareTo(b.lastName);
-              if (lastNameComparison != 0) {
-                return lastNameComparison;
-              }
-              return a.firstName.compareTo(b.firstName);
-            });
-
             return ListView.builder(
               padding: const EdgeInsets.all(16.0),
               itemCount: employees.length,
@@ -358,52 +252,40 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(16.0),
                     leading: CircleAvatar(
-                      backgroundColor:
-                          Theme.of(context).primaryColor.withOpacity(0.1),
-                      child: const Icon(Icons.person_2, color: Colors.purple),
+                      backgroundColor: Theme.of(context).colorScheme.tertiary.withOpacity(0.1),
+                      child: const Icon(Icons.person_outline, color: Colors.teal),
                     ),
                     title: Text(
-                      employee.fullName,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 18),
+                      employee.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Position: ${employee.position}'),
-                        if (employee.email.isNotEmpty)
+                        Text('Role: ${employee.role}'),
+                        if (employee.email != null && employee.email!.isNotEmpty)
                           Text('Email: ${employee.email}'),
-                        if (employee.phoneNumber.isNotEmpty)
-                          Text('Phone: ${employee.phoneNumber}'),
-                        Text(
-                            'Hire Date: ${DateFormat('yyyy-MM-dd').format(employee.hireDate)}'),
-                        if (employee.salary != null)
-                          Text(
-                              'Salary: \$${employee.salary!.toStringAsFixed(2)}'),
-                        if (employee.address != null &&
-                            employee.address!.isNotEmpty)
-                          Text('Address: ${employee.address}'),
+                        if (employee.phone != null && employee.phone!.isNotEmpty)
+                          Text('Phone: ${employee.phone}'),
+                        Text('Hire Date: ${DateFormat('MMM d,yyyy').format(employee.hireDate.toLocal())}'),
+                        Text('Last Update: ${DateFormat('MMM d,yyyy').format(employee.lastModified.toLocal())}'),
                       ],
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon:
-                              const Icon(Icons.edit, color: Colors.blueAccent),
+                          icon: const Icon(Icons.edit, color: Colors.blueAccent),
                           onPressed: () {
-                            _showAddEditEmployeeDialog(employee: employee);
+                            _showEmployeeDialog(context, employee: employee);
                           },
                         ),
                         IconButton(
-                          icon:
-                              const Icon(Icons.delete, color: Colors.redAccent),
+                          icon: const Icon(Icons.delete, color: Colors.redAccent),
                           onPressed: () async {
                             await _employeeService.deleteEmployee(employee.id!);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content:
-                                      Text('${employee.fullName} deleted!')),
+                              SnackBar(content: Text('${employee.name} deleted!')),
                             );
                           },
                         ),

@@ -1,44 +1,40 @@
-// lib/data/models/inventory/product_model.dart
+// No special annotations needed for sembast; it uses plain Dart objects and maps.
+
 class Product {
-  String? id; // Sembast ID for the product record
+  String? id; // Sembast uses String IDs (key), typically auto-generated
+  final String productSku;
   String name;
-  String productSku;
   String description;
   double price; // Selling price
-  double costPrice; // Cost price (NEW FIELD)
+  double costPrice; // Cost of the product (NEW)
   int stockQuantity;
   String category;
   DateTime createdAt;
   DateTime lastModified;
 
+  // Constructor
   Product({
-    this.id,
-    required this.name,
+    this.id, // Sembast will set this upon insertion if null
     required this.productSku,
+    required this.name,
     this.description = '',
     required this.price,
-    required this.costPrice, // Include costPrice in the constructor
-    this.stockQuantity = 0,
+    this.costPrice = 0.0, // NEW: Initialize costPrice, default to 0.0
+    required this.stockQuantity,
     this.category = 'General',
     DateTime? createdAt,
     DateTime? lastModified,
-  }) : createdAt = createdAt ?? DateTime.now(),
-       lastModified = lastModified ?? DateTime.now();
+  }) :  createdAt = createdAt ?? DateTime.now(),
+        lastModified = lastModified ?? DateTime.now();
 
-  // Method to update stock quantity and lastModified date
-  void updateStock(int quantityChange) {
-    stockQuantity += quantityChange;
-    lastModified = DateTime.now();
-  }
-
-  // Convert a Product object to a Map for Sembast storage
+  // Convert a Product object into a Map. The keys will be used as field names in Sembast.
   Map<String, dynamic> toMap() {
     return {
-      'name': name,
       'productSku': productSku,
+      'name': name,
       'description': description,
       'price': price,
-      'costPrice': costPrice, // Include costPrice in toMap
+      'costPrice': costPrice, // NEW: Include costPrice in map
       'stockQuantity': stockQuantity,
       'category': category,
       'createdAt': createdAt.toIso8601String(), // Store DateTime as ISO string
@@ -46,19 +42,25 @@ class Product {
     };
   }
 
-  // Create a Product object from a Map (retrieved from Sembast)
+  // Convert a Map into a Product object.
   factory Product.fromMap(Map<String, dynamic> map, {String? id}) {
     return Product(
       id: id,
-      name: map['name'] as String,
-      productSku: map['productSku'] as String,
-      description: map['description'] as String? ?? '',
-      price: map['price'] as double,
-      costPrice: map['costPrice'] as double? ?? 0.0, // Retrieve costPrice, default to 0.0 if not present (for old data)
-      stockQuantity: map['stockQuantity'] as int,
-      category: map['category'] as String? ?? 'General',
-      createdAt: DateTime.parse(map['createdAt'] as String),
-      lastModified: DateTime.parse(map['lastModified'] as String),
+      productSku: map['productSku'],
+      name: map['name'],
+      description: map['description'],
+      price: map['price'],
+      costPrice: map['costPrice'] ?? 0.0, // NEW: Retrieve costPrice, default to 0.0 for existing data
+      stockQuantity: map['stockQuantity'],
+      category: map['category'],
+      createdAt: DateTime.parse(map['createdAt']),
+      lastModified: DateTime.parse(map['lastModified']),
     );
+  }
+
+  // You can add helper methods here, e.g., for updating stock.
+  void updateStock(int change) {
+    stockQuantity += change;
+    lastModified = DateTime.now();
   }
 }

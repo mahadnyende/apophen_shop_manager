@@ -1,8 +1,6 @@
-// lib/screens/inventory_screen.dart
 import 'package:flutter/material.dart';
-import 'package:apophen_shop_manager/data/models/inventory/product_model.dart';
 import 'package:apophen_shop_manager/services/inventory_service.dart';
-import 'package:intl/intl.dart'; // For date formatting
+import 'package:apophen_shop_manager/data/models/inventory/product_model.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -13,63 +11,61 @@ class InventoryScreen extends StatefulWidget {
 
 class _InventoryScreenState extends State<InventoryScreen> {
   final InventoryService _inventoryService = InventoryService();
-  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _skuController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
-  final TextEditingController _costPriceController = TextEditingController(); // New controller for cost price
+  final TextEditingController _costPriceController = TextEditingController(); // NEW: Controller for costPrice
   final TextEditingController _stockController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
 
   @override
   void dispose() {
-    _nameController.dispose();
     _skuController.dispose();
-    _descriptionController.dispose();
+    _nameController.dispose();
     _priceController.dispose();
     _costPriceController.dispose(); // Dispose new controller
     _stockController.dispose();
+    _descriptionController.dispose();
     _categoryController.dispose();
-    _inventoryService.dispose(); // Dispose the stream controller
+    _inventoryService.dispose();
     super.dispose();
   }
 
   void _clearControllers() {
-    _nameController.clear();
     _skuController.clear();
-    _descriptionController.clear();
+    _nameController.clear();
     _priceController.clear();
     _costPriceController.clear(); // Clear new controller
     _stockController.clear();
+    _descriptionController.clear();
     _categoryController.clear();
   }
 
   void _addProduct() async {
-    if (_nameController.text.isEmpty ||
-        _skuController.text.isEmpty ||
-        _priceController.text.isEmpty ||
-        _costPriceController.text.isEmpty || // Validate cost price
+    if (_skuController.text.isEmpty || _nameController.text.isEmpty ||
+        _priceController.text.isEmpty || _costPriceController.text.isEmpty || // NEW: costPrice required
         _stockController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all required fields (Name, SKU, Price, Cost Price, Stock)!')),
+        const SnackBar(content: Text('Please fill all required fields!')),
       );
       return;
     }
 
     try {
       final product = Product(
-        name: _nameController.text,
         productSku: _skuController.text,
+        name: _nameController.text,
         description: _descriptionController.text,
         price: double.parse(_priceController.text),
-        costPrice: double.parse(_costPriceController.text), // Parse cost price
+        costPrice: double.parse(_costPriceController.text), // NEW: Parse costPrice
         stockQuantity: int.parse(_stockController.text),
         category: _categoryController.text.isEmpty ? 'General' : _categoryController.text,
       );
       await _inventoryService.addProduct(product);
       _clearControllers();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${product.name} (SKU: ${product.productSku}) added successfully!')),
+        const SnackBar(content: Text('Product added successfully!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -79,34 +75,32 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   void _updateProduct(Product product) async {
-    if (_nameController.text.isEmpty ||
-        _skuController.text.isEmpty ||
-        _priceController.text.isEmpty ||
-        _costPriceController.text.isEmpty || // Validate cost price
+    if (_nameController.text.isEmpty || _priceController.text.isEmpty ||
+        _costPriceController.text.isEmpty || // NEW: costPrice required for update
         _stockController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all required fields (Name, SKU, Price, Cost Price, Stock)!')),
+        const SnackBar(content: Text('Please fill all required fields for update!')),
       );
       return;
     }
 
     try {
       final updatedProduct = Product(
-        id: product.id, // Keep the existing ID
+        id: product.id,
+        productSku: product.productSku,
         name: _nameController.text,
-        productSku: _skuController.text,
         description: _descriptionController.text,
         price: double.parse(_priceController.text),
-        costPrice: double.parse(_costPriceController.text), // Parse cost price
+        costPrice: double.parse(_costPriceController.text), // NEW: Parse costPrice for update
         stockQuantity: int.parse(_stockController.text),
         category: _categoryController.text.isEmpty ? 'General' : _categoryController.text,
-        createdAt: product.createdAt, // Preserve original creation date
-        lastModified: DateTime.now(), // Update last modified date
+        createdAt: product.createdAt,
+        lastModified: DateTime.now(),
       );
       await _inventoryService.updateProduct(updatedProduct);
       _clearControllers();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${updatedProduct.name} updated successfully!')),
+        const SnackBar(content: Text('Product updated successfully!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -115,8 +109,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
     }
   }
 
+
   void _showAddProductDialog(BuildContext context) {
-    _clearControllers(); // Clear controllers before showing add dialog
+    _clearControllers();
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -127,36 +122,35 @@ class _InventoryScreenState extends State<InventoryScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Product Name *'),
+                  controller: _skuController,
+                  decoration: const InputDecoration(labelText: 'SKU (Unique)*'),
                 ),
                 TextField(
-                  controller: _skuController,
-                  decoration: const InputDecoration(labelText: 'Product SKU *'),
+                  controller: _nameController,
+                  decoration: const InputDecoration(labelText: 'Product Name*'),
                 ),
                 TextField(
                   controller: _descriptionController,
-                  decoration: const InputDecoration(labelText: 'Description'),
-                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: 'Description (Optional)'),
                 ),
                 TextField(
                   controller: _priceController,
-                  decoration: const InputDecoration(labelText: 'Selling Price *'),
+                  decoration: const InputDecoration(labelText: 'Selling Price*'), // Updated label
                   keyboardType: TextInputType.number,
                 ),
-                TextField(
-                  controller: _costPriceController, // New field for cost price
-                  decoration: const InputDecoration(labelText: 'Cost Price *'),
+                TextField( // NEW: Cost Price Input Field
+                  controller: _costPriceController,
+                  decoration: const InputDecoration(labelText: 'Cost Price*'),
                   keyboardType: TextInputType.number,
                 ),
                 TextField(
                   controller: _stockController,
-                  decoration: const InputDecoration(labelText: 'Stock Quantity *'),
+                  decoration: const InputDecoration(labelText: 'Stock Quantity*'),
                   keyboardType: TextInputType.number,
                 ),
                 TextField(
                   controller: _categoryController,
-                  decoration: const InputDecoration(labelText: 'Category (Optional)'),
+                  decoration: const InputDecoration(labelText: 'Category (Optional, default: General)'),
                 ),
               ],
             ),
@@ -171,7 +165,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ElevatedButton(
               onPressed: () {
                 _addProduct();
-                Navigator.of(context).pop(); // Close dialog after adding
+                Navigator.of(context).pop();
               },
               child: const Text('Add Product'),
             ),
@@ -182,12 +176,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   void _showEditProductDialog(BuildContext context, Product product) {
-    // Populate controllers with existing product data
-    _nameController.text = product.name;
     _skuController.text = product.productSku;
+    _nameController.text = product.name;
     _descriptionController.text = product.description;
     _priceController.text = product.price.toString();
-    _costPriceController.text = product.costPrice.toString(); // Populate cost price
+    _costPriceController.text = product.costPrice.toString(); // NEW: Populate costPrice
     _stockController.text = product.stockQuantity.toString();
     _categoryController.text = product.category;
 
@@ -201,36 +194,36 @@ class _InventoryScreenState extends State<InventoryScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Product Name *'),
+                  controller: _skuController,
+                  decoration: const InputDecoration(labelText: 'SKU (Cannot be changed)'),
+                  readOnly: true,
                 ),
                 TextField(
-                  controller: _skuController,
-                  decoration: const InputDecoration(labelText: 'Product SKU *'),
+                  controller: _nameController,
+                  decoration: const InputDecoration(labelText: 'Product Name*'),
                 ),
                 TextField(
                   controller: _descriptionController,
-                  decoration: const InputDecoration(labelText: 'Description'),
-                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: 'Description (Optional)'),
                 ),
                 TextField(
                   controller: _priceController,
-                  decoration: const InputDecoration(labelText: 'Selling Price *'),
+                  decoration: const InputDecoration(labelText: 'Selling Price*'), // Updated label
                   keyboardType: TextInputType.number,
                 ),
-                TextField(
-                  controller: _costPriceController, // New field for cost price
-                  decoration: const InputDecoration(labelText: 'Cost Price *'),
+                TextField( // NEW: Cost Price Input Field
+                  controller: _costPriceController,
+                  decoration: const InputDecoration(labelText: 'Cost Price*'),
                   keyboardType: TextInputType.number,
                 ),
                 TextField(
                   controller: _stockController,
-                  decoration: const InputDecoration(labelText: 'Stock Quantity *'),
+                  decoration: const InputDecoration(labelText: 'Stock Quantity*'),
                   keyboardType: TextInputType.number,
                 ),
                 TextField(
                   controller: _categoryController,
-                  decoration: const InputDecoration(labelText: 'Category (Optional)'),
+                  decoration: const InputDecoration(labelText: 'Category (Optional, default: General)'),
                 ),
               ],
             ),
@@ -238,15 +231,15 @@ class _InventoryScreenState extends State<InventoryScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                _clearControllers(); // Clear controllers on cancel
+                _clearControllers();
                 Navigator.of(context).pop();
               },
               child: const Text('Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
-                _updateProduct(product); // Pass the original product for ID
-                Navigator.of(context).pop(); // Close dialog after updating
+                _updateProduct(product);
+                Navigator.of(context).pop();
               },
               child: const Text('Save Changes'),
             ),
@@ -273,7 +266,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFF0F4C3), Color(0xFFE6EE9C)], // Light green-yellow gradient
+            colors: [Color(0xFFF3E5F5), Color(0xFFE1BEE7)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -320,7 +313,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     contentPadding: const EdgeInsets.all(16.0),
                     leading: CircleAvatar(
                       backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                      child: const Icon(Icons.shopping_bag, color: Colors.green),
+                      child: const Icon(Icons.shopping_bag, color: Colors.deepPurple),
                     ),
                     title: Text(
                       product.name,
@@ -329,10 +322,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('SKU: ${product.productSku} | Price: \$${product.price.toStringAsFixed(2)}'),
-                        Text('Cost Price: \$${product.costPrice.toStringAsFixed(2)}'), // Display cost price
-                        Text('Stock: ${product.stockQuantity} | Category: ${product.category}'),
-                        Text('Last Modified: ${DateFormat('yyyy-MM-dd HH:mm').format(product.lastModified)}'),
+                        Text('SKU: ${product.productSku}'),
+                        Text('Selling Price: \$${product.price.toStringAsFixed(2)}'), // Updated label
+                        Text('Cost Price: \$${product.costPrice.toStringAsFixed(2)}'), // NEW: Display costPrice
+                        Text('Stock: ${product.stockQuantity} units'),
+                        Text('Category: ${product.category}'),
+                        Text('Last Modified: ${product.lastModified.toLocal().toString().split(' ')[0]}'),
                       ],
                     ),
                     trailing: Row(
