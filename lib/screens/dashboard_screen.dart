@@ -9,7 +9,9 @@ import 'package:apophen_shop_manager/screens/financial_reports_screen.dart';
 import 'package:apophen_shop_manager/screens/customer_screen.dart';
 import 'package:apophen_shop_manager/screens/employee_screen.dart';
 import 'package:apophen_shop_manager/screens/expense_management_screen.dart';
-import 'package:apophen_shop_manager/screens/admin_user_management_screen.dart'; // NEW: Import AdminUserManagementScreen
+import 'package:apophen_shop_manager/screens/admin_user_management_screen.dart';
+import 'package:apophen_shop_manager/screens/supplier_management_screen.dart';
+import 'package:apophen_shop_manager/screens/purchase_order_management_screen.dart'; // NEW: Import PurchaseOrderManagementScreen
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -70,141 +72,158 @@ class _DashboardScreenState extends State<DashboardScreen> {
             end: Alignment.bottomRight,
           ),
         ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.dashboard,
-                  size: 100,
-                  color: Colors.deepPurple[400],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.dashboard,
+                size: 100,
+                color: Colors.deepPurple[400],
+              ),
+              const SizedBox(height: 30),
+              Text(
+                'Welcome, ${_userRole.toString().split('.').last.toUpperCase()}!',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple[700],
                 ),
-                const SizedBox(height: 30),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              if (_userId != null)
                 Text(
-                  'Welcome, ${_userRole.toString().split('.').last.toUpperCase()}!',
+                  'User ID: $_userId',
                   style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.deepPurple[700],
+                    fontSize: 16,
+                    color: Colors.grey[700],
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 10),
-                if (_userId != null)
-                  Text(
-                    'User ID: $_userId',
+              const SizedBox(height: 20),
+              const Text(
+                'You have successfully logged in. This is your main dashboard.',
+                style: TextStyle(fontSize: 18, color: Colors.black87),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              // Dashboard Features
+              Wrap(
+                spacing: 16.0,
+                runSpacing: 16.0,
+                alignment: WrapAlignment.center,
+                children: [
+                  _buildDashboardCard(
+                    icon: Icons.inventory,
+                    title: 'Inventory',
+                    color: Colors.green,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const InventoryScreen()),
+                      );
+                    },
+                  ),
+                  _buildDashboardCard(
+                    icon: Icons.point_of_sale,
+                    title: 'POS',
+                    color: Colors.orange,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const POSScreen()),
+                      );
+                    },
+                  ),
+                  _buildDashboardCard(
+                    icon: Icons.bar_chart,
+                    title: 'Reports',
+                    color: Colors.blue,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const FinancialReportsScreen()),
+                      );
+                    },
+                  ),
+                  _buildDashboardCard(
+                    icon: Icons.group,
+                    title: 'Customers',
+                    color: Colors.pink,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const CustomerScreen()),
+                      );
+                    },
+                  ),
+                  _buildDashboardCard(
+                    icon: Icons.people,
+                    title: 'Employees',
+                    color: Colors.teal,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const EmployeeScreen()),
+                      );
+                    },
+                  ),
+                  _buildDashboardCard(
+                    icon: Icons.receipt_long,
+                    title: 'Expenses',
+                    color: Colors.orangeAccent,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const ExpenseManagementScreen()),
+                      );
+                    },
+                  ),
+                  if (_userRole == UserRole.admin)
+                    _buildDashboardCard(
+                      icon: Icons.manage_accounts,
+                      title: 'Users',
+                      color: Colors.deepPurple,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => const AdminUserManagementScreen()),
+                        );
+                      },
+                    ),
+                  _buildDashboardCard(
+                    icon: Icons.local_shipping,
+                    title: 'Suppliers',
+                    color: Colors.lightBlue,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const SupplierManagementScreen()),
+                      );
+                    },
+                  ),
+                  _buildDashboardCard( // NEW: Purchase Orders Card
+                    icon: Icons.shopping_basket,
+                    title: 'Purchase Orders',
+                    color: Colors.purpleAccent,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const PurchaseOrderManagementScreen()),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 40),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 10.0),
+                  child: Text(
+                    AppConstants.poweredBy,
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.grey[700],
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                const SizedBox(height: 20),
-                const Text(
-                  'You have successfully logged in. This is your main dashboard.',
-                  style: TextStyle(fontSize: 18, color: Colors.black87),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 40),
-                // Dashboard Features
-                Wrap(
-                  spacing: 16.0,
-                  runSpacing: 16.0,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    _buildDashboardCard(
-                      icon: Icons.inventory,
-                      title: 'Inventory',
-                      color: Colors.green,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => const InventoryScreen()),
-                        );
-                      },
-                    ),
-                    _buildDashboardCard(
-                      icon: Icons.point_of_sale,
-                      title: 'POS',
-                      color: Colors.orange,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => const POSScreen()),
-                        );
-                      },
-                    ),
-                    _buildDashboardCard(
-                      icon: Icons.bar_chart,
-                      title: 'Reports',
-                      color: Colors.blue,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => const FinancialReportsScreen()),
-                        );
-                      },
-                    ),
-                    _buildDashboardCard(
-                      icon: Icons.group,
-                      title: 'Customers',
-                      color: Colors.pink,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => const CustomerScreen()),
-                        );
-                      },
-                    ),
-                    _buildDashboardCard(
-                      icon: Icons.people,
-                      title: 'Employees',
-                      color: Colors.teal,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => const EmployeeScreen()),
-                        );
-                      },
-                    ),
-                    _buildDashboardCard(
-                      icon: Icons.receipt_long,
-                      title: 'Expenses',
-                      color: Colors.orangeAccent,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => const ExpenseManagementScreen()),
-                        );
-                      },
-                    ),
-                    // NEW: User Management Card (only visible to admins)
-                    if (_userRole == UserRole.admin)
-                      _buildDashboardCard(
-                        icon: Icons.manage_accounts,
-                        title: 'Users',
-                        color: Colors.deepPurple,
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const AdminUserManagementScreen()),
-                          );
-                        },
-                      ),
-                  ],
-                ),
-                const Spacer(),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 10.0),
-                    child: Text(
-                      AppConstants.poweredBy,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
+                      color: Colors.grey[600],
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:apophen_shop_manager/data/models/crm/customer_model.dart';
 import 'package:apophen_shop_manager/services/customer_service.dart';
 import 'package:intl/intl.dart';
+import 'package:apophen_shop_manager/screens/customer_purchase_history_screen.dart'; // NEW: Import CustomerPurchaseHistoryScreen
 
 class CustomerScreen extends StatefulWidget {
   const CustomerScreen({super.key});
@@ -235,13 +236,24 @@ class _CustomerScreenState extends State<CustomerScreen> {
                           Text('Phone: ${customer.phone}'),
                         if (customer.address != null && customer.address!.isNotEmpty)
                           Text('Address: ${customer.address}'),
-                        Text('Joined: ${DateFormat('MMM d, yyyy').format(customer.createdAt.toLocal())}'),
-                        Text('Last Update: ${DateFormat('MMM d, yyyy').format(customer.lastModified.toLocal())}'),
+                        Text('Joined: ${DateFormat('MMM d,yyyy').format(customer.createdAt.toLocal())}'),
+                        Text('Last Update: ${DateFormat('MMM d,yyyy').format(customer.lastModified.toLocal())}'),
                       ],
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        IconButton(
+                          icon: const Icon(Icons.history, color: Colors.grey), // NEW: History Icon
+                          tooltip: 'View Purchase History',
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => CustomerPurchaseHistoryScreen(customer: customer),
+                              ),
+                            );
+                          },
+                        ),
                         IconButton(
                           icon: const Icon(Icons.edit, color: Colors.blueAccent),
                           onPressed: () {

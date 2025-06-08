@@ -1,49 +1,46 @@
-// lib/screens/supplier_screen.dart
 import 'package:flutter/material.dart';
-import 'package:apophen_shop_manager/services/supplier_service.dart';
 import 'package:apophen_shop_manager/data/models/purchases/supplier_model.dart';
-import 'package:intl/intl.dart'; // Required for date formatting
+import 'package:apophen_shop_manager/services/supplier_service.dart';
+import 'package:intl/intl.dart';
 
-class SupplierScreen extends StatefulWidget {
-  const SupplierScreen({super.key});
+class SupplierManagementScreen extends StatefulWidget {
+  const SupplierManagementScreen({super.key});
 
   @override
-  State<SupplierScreen> createState() => _SupplierScreenState();
+  State<SupplierManagementScreen> createState() => _SupplierManagementScreenState();
 }
 
-class _SupplierScreenState extends State<SupplierScreen> {
+class _SupplierManagementScreenState extends State<SupplierManagementScreen> {
   final SupplierService _supplierService = SupplierService();
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _contactPersonController =
-      TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _contactPersonController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
 
   @override
   void dispose() {
     _nameController.dispose();
     _contactPersonController.dispose();
-    _phoneController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _addressController.dispose();
-    _supplierService.dispose(); // Dispose the stream controller
+    _supplierService.dispose();
     super.dispose();
   }
 
   void _clearControllers() {
     _nameController.clear();
     _contactPersonController.clear();
-    _phoneController.clear();
     _emailController.clear();
+    _phoneController.clear();
     _addressController.clear();
   }
 
   void _addSupplier() async {
-    if (_nameController.text.isEmpty || _contactPersonController.text.isEmpty) {
+    if (_nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Supplier Name and Contact Person are required!')),
+        const SnackBar(content: Text('Supplier Name is required!')),
       );
       return;
     }
@@ -51,16 +48,15 @@ class _SupplierScreenState extends State<SupplierScreen> {
     try {
       final supplier = Supplier(
         name: _nameController.text,
-        contactPerson: _contactPersonController.text,
-        phoneNumber: _phoneController.text,
-        email: _emailController.text,
-        address:
-            _addressController.text.isEmpty ? null : _addressController.text,
+        contactPerson: _contactPersonController.text.isNotEmpty ? _contactPersonController.text : null,
+        email: _emailController.text.isNotEmpty ? _emailController.text : null,
+        phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
+        address: _addressController.text.isNotEmpty ? _addressController.text : null,
       );
       await _supplierService.addSupplier(supplier);
       _clearControllers();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${supplier.name} added successfully!')),
+        const SnackBar(content: Text('Supplier added successfully!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -70,11 +66,9 @@ class _SupplierScreenState extends State<SupplierScreen> {
   }
 
   void _updateSupplier(Supplier supplier) async {
-    if (_nameController.text.isEmpty || _contactPersonController.text.isEmpty) {
+    if (_nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'Supplier Name and Contact Person are required for update!')),
+        const SnackBar(content: Text('Supplier Name is required for update!')),
       );
       return;
     }
@@ -83,19 +77,17 @@ class _SupplierScreenState extends State<SupplierScreen> {
       final updatedSupplier = Supplier(
         id: supplier.id, // Keep the existing ID
         name: _nameController.text,
-        contactPerson: _contactPersonController.text,
-        phoneNumber: _phoneController.text,
-        email: _emailController.text,
-        address:
-            _addressController.text.isEmpty ? null : _addressController.text,
+        contactPerson: _contactPersonController.text.isNotEmpty ? _contactPersonController.text : null,
+        email: _emailController.text.isNotEmpty ? _emailController.text : null,
+        phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
+        address: _addressController.text.isNotEmpty ? _addressController.text : null,
         createdAt: supplier.createdAt, // Preserve original creation date
         lastModified: DateTime.now(), // Update last modified date
       );
       await _supplierService.updateSupplier(updatedSupplier);
       _clearControllers();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('${updatedSupplier.name} updated successfully!')),
+        const SnackBar(content: Text('Supplier updated successfully!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -104,31 +96,33 @@ class _SupplierScreenState extends State<SupplierScreen> {
     }
   }
 
-  void _showAddSupplierDialog(BuildContext context) {
-    _clearControllers(); // Clear controllers before showing add dialog
+  void _showSupplierDialog(BuildContext context, {Supplier? supplier}) {
+    _clearControllers(); // Clear controllers before showing dialog
+    if (supplier != null) {
+      // Populate if editing an existing supplier
+      _nameController.text = supplier.name;
+      _contactPersonController.text = supplier.contactPerson ?? '';
+      _emailController.text = supplier.email ?? '';
+      _phoneController.text = supplier.phone ?? '';
+      _addressController.text = supplier.address ?? '';
+    }
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Add New Supplier'),
+          title: Text(supplier == null ? 'Add New Supplier' : 'Edit Supplier: ${supplier.name}'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: _nameController,
-                  decoration:
-                      const InputDecoration(labelText: 'Supplier Name *'),
+                  decoration: const InputDecoration(labelText: 'Supplier Name*'),
                 ),
                 TextField(
                   controller: _contactPersonController,
-                  decoration:
-                      const InputDecoration(labelText: 'Contact Person *'),
-                ),
-                TextField(
-                  controller: _phoneController,
-                  decoration: const InputDecoration(labelText: 'Phone Number'),
-                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(labelText: 'Contact Person'),
                 ),
                 TextField(
                   controller: _emailController,
@@ -136,74 +130,13 @@ class _SupplierScreenState extends State<SupplierScreen> {
                   keyboardType: TextInputType.emailAddress,
                 ),
                 TextField(
-                  controller: _addressController,
-                  decoration: const InputDecoration(labelText: 'Address'),
-                  maxLines: 3,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                _addSupplier();
-                Navigator.of(context).pop(); // Close dialog after adding
-              },
-              child: const Text('Add Supplier'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showEditSupplierDialog(BuildContext context, Supplier supplier) {
-    // Populate controllers with existing supplier data
-    _nameController.text = supplier.name;
-    _contactPersonController.text = supplier.contactPerson;
-    _phoneController.text = supplier.phoneNumber;
-    _emailController.text = supplier.email;
-    _addressController.text = supplier.address ?? '';
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Edit Supplier: ${supplier.name}'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: _nameController,
-                  decoration:
-                      const InputDecoration(labelText: 'Supplier Name *'),
-                ),
-                TextField(
-                  controller: _contactPersonController,
-                  decoration:
-                      const InputDecoration(labelText: 'Contact Person *'),
-                ),
-                TextField(
                   controller: _phoneController,
-                  decoration: const InputDecoration(labelText: 'Phone Number'),
+                  decoration: const InputDecoration(labelText: 'Phone'),
                   keyboardType: TextInputType.phone,
                 ),
                 TextField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                TextField(
                   controller: _addressController,
                   decoration: const InputDecoration(labelText: 'Address'),
-                  maxLines: 3,
                 ),
               ],
             ),
@@ -211,17 +144,21 @@ class _SupplierScreenState extends State<SupplierScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                _clearControllers(); // Clear controllers on cancel
+                _clearControllers();
                 Navigator.of(context).pop();
               },
               child: const Text('Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
-                _updateSupplier(supplier); // Pass the original supplier for ID
-                Navigator.of(context).pop(); // Close dialog after updating
+                if (supplier == null) {
+                  _addSupplier();
+                } else {
+                  _updateSupplier(supplier);
+                }
+                Navigator.of(context).pop();
               },
-              child: const Text('Save Changes'),
+              child: Text(supplier == null ? 'Add Supplier' : 'Save Changes'),
             ),
           ],
         );
@@ -233,24 +170,20 @@ class _SupplierScreenState extends State<SupplierScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Supplier Management',
-            style: TextStyle(color: Colors.white)),
+        title: const Text('Supplier Management', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF6A1B9A),
         actions: [
           IconButton(
             icon: const Icon(Icons.person_add, color: Colors.white),
             tooltip: 'Add New Supplier',
-            onPressed: () => _showAddSupplierDialog(context),
+            onPressed: () => _showSupplierDialog(context),
           ),
         ],
       ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFFE0F2F7),
-              Color(0xFFB3EBF5)
-            ], // Light blue-green gradient for suppliers
+            colors: [Color(0xFFE0F7FA), Color(0xFFB2EBF2)], // Light blue/cyan gradient
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -296,49 +229,43 @@ class _SupplierScreenState extends State<SupplierScreen> {
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(16.0),
                     leading: CircleAvatar(
-                      backgroundColor:
-                          Theme.of(context).primaryColor.withOpacity(0.1),
-                      child:
-                          const Icon(Icons.business, color: Colors.lightBlue),
+                      backgroundColor: Colors.lightBlue.withOpacity(0.1),
+                      child: const Icon(Icons.business, color: Colors.lightBlue),
                     ),
                     title: Text(
                       supplier.name,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 18),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Contact: ${supplier.contactPerson}'),
-                        if (supplier.email.isNotEmpty)
+                        if (supplier.contactPerson != null && supplier.contactPerson!.isNotEmpty)
+                          Text('Contact: ${supplier.contactPerson}'),
+                        if (supplier.email != null && supplier.email!.isNotEmpty)
                           Text('Email: ${supplier.email}'),
-                        if (supplier.phoneNumber.isNotEmpty)
-                          Text('Phone: ${supplier.phoneNumber}'),
-                        if (supplier.address != null &&
-                            supplier.address!.isNotEmpty)
+                        if (supplier.phone != null && supplier.phone!.isNotEmpty)
+                          Text('Phone: ${supplier.phone}'),
+                        if (supplier.address != null && supplier.address!.isNotEmpty)
                           Text('Address: ${supplier.address}'),
-                        Text(
-                            'Added: ${DateFormat('yyyy-MM-dd').format(supplier.createdAt)}'),
+                        Text('Added: ${DateFormat('MMM d,yyyy').format(supplier.createdAt.toLocal())}'),
+                        Text('Last Update: ${DateFormat('MMM d,yyyy').format(supplier.lastModified.toLocal())}'),
                       ],
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon:
-                              const Icon(Icons.edit, color: Colors.blueAccent),
+                          icon: const Icon(Icons.edit, color: Colors.blueAccent),
                           onPressed: () {
-                            _showEditSupplierDialog(context, supplier);
+                            _showSupplierDialog(context, supplier: supplier);
                           },
                         ),
                         IconButton(
-                          icon:
-                              const Icon(Icons.delete, color: Colors.redAccent),
+                          icon: const Icon(Icons.delete, color: Colors.redAccent),
                           onPressed: () async {
                             await _supplierService.deleteSupplier(supplier.id!);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text('${supplier.name} deleted!')),
+                              SnackBar(content: Text('${supplier.name} deleted!')),
                             );
                           },
                         ),
